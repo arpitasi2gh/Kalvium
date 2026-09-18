@@ -13,5 +13,25 @@ const AppError = require('./../utils/AppError');
  * No write may happen before both checks pass.
  */
 exports.addComment = async (postId, userId, body) => {
-  throw new AppError('addComment is not implemented yet', 501);
+  
+  // 1. The post must exist
+  const post = await repo.findById(postId);
+  if (!post) {
+    throw new AppError('Post not found', 404);
+  }
+
+  // 2. Only the author may edit it
+  if (post.authorId !== userId) {
+    throw new AppError('You can only edit your own post', 403);
+  }
+
+  // 3. It must be within the window
+  const timeElapsed = Date.now() - new Date(post.createdAt).getTime();
+  if (timeElapsed > EDIT_WINDOW_MS) {
+    throw new AppError('Post can no longer be edited', 403);
+  }
+
+  // All guards passed, update and return the post
+  return repo.update(postId, changes);
+
 };
